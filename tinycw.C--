@@ -1,0 +1,140 @@
+?use8088
+//? ctrl_c FALSE
+//?include "WRITE.H--"
+//?include "mouse.h--"
+//?define HIGH 1
+//?define LOW 0
+//?stack 8192
+//?codesize
+//?resize  TRUE
+//?use8086
+//************************************************
+//* TINYCW                                       *
+//* Small CW decoder in the world                *
+//* Decode pulse audio mouse middle button input *
+//************************************************
+
+//137 bytes si uso interrupcion de timer
+//word tiempo_ini;
+//word tiempo_silencio_ini;
+
+
+/*:void WRITE()*/
+/* AL = character to write to screen at cursor */
+/* Writes the specified character at the cursor and then advances the
+   cursor.  Bell, CR, and LF are treated as special characters and supported.*/
+/*{
+	BX=0x0007;
+	AH=0xE;
+	$ INT 0x10
+}*/
+   /* returns:  AH = 0xE
+             BX = 7*/
+
+
+/*:void GETMOUSEXY()*/
+/* Gets the mouse pointer position and button status.*/
+/*{
+	AX=3;
+	$INT 0x33
+}*/
+/*  RETURNS:  AX = 3;
+              BX = mouse button status:
+                     bit 0 set if left button is down
+                     bit 1 set if right button is down
+                     bit 2 set if center button is down
+              CX = x coordinate
+              DX = y coordinate
+*/
+			 
+/*:word GETMOUSEPRESS()  */  /* BX = button (0 for left, 1 for right,
+                                           or 2 for center) */
+/* Gets the number of presses and last press position for a specified
+   mouse button since the last call to this function for that button.*/
+/*{
+	AX=5;
+	$INT 0x33
+}*/
+/*  RETURNS:  AX = button status:
+                    bit 0 set if left button down
+                    bit 1 set if right button down
+                    bit 2 set if middle button down
+              BX = button press counter
+              CX = x coordinate of last button press
+              DX = y coordinate of last button press
+*/
+
+/*word pulseIn(byte value){ 
+ byte salir=0;  
+ do{  
+  GETMOUSEPRESS();     
+  IF (value==HIGH){IF (AX&2==2){ salir=1;} }
+  ELSE{IF (AX&2==0){ salir=1;}}  
+ }while (salir==0); //Comienzo Flanco 
+}*/
+
+//void Flanco(byte dato)
+/*void FLANCO()
+{
+  do{
+   GETMOUSEPRESS();
+  }while (AX&2==SI);
+ // }while (AX&2==dato);
+}*/
+
+//Algoritmo
+//Espera Pulsacion Raton - Leer tiempo inicio
+//Espera Dejar Pulsacion Raton - Leer tiempo Fin
+//Si ((TiempoSilencio-TiempoInicio)>5) Silencio
+//Si ((TiempoSilencio-TiempoInicio)>10) Silencio
+//Si ((TiempoFin-TiempoInicio)>5) -
+//Sino .
+
+//Programa Principal
+//87 bytes
+//84 con push
+//82
+main(){
+ //0x40:0x6C; //Posicion del temporizador 
+ //AX=0x4C00;
+ //$INT 0x21;
+ inicio: 
+ {
+  do{   
+   AX=5; $INT 0x33;     
+  }while (AL==0);  //Modifica AX,BX,CX,DX
+  ES=0x40; AX=ESWORD[0x6C]; //Tiempo inicio pitido
+  //tiempo_ini= AX;  
+  $PUSH AX; //tiempo_ini= AX;  
+  //DI= AX-tiempo_silencio_ini;      
+  DI= AX-SI;      //DI= AX-tiempo_silencio_ini  
+    
+  do{
+   AX=5; $INT 0x33;
+  }while (AL==2); //Modifica AX,BX,CX,DX  
+  AX=ESWORD[0x6C]; //Tiempo Fin pitido  
+  //tiempo_silencio_ini= AX;       
+  SI= AX; //tiempo_silencio_ini= AX
+  $POP BX;  
+  //CX= AX-tiempo_ini; //Duracion punto o raya         
+  CX= AX-BX; //Duracion punto o raya
+
+  AH=0xE;
+  BX=0x0007;
+  IF (DI>5)
+  {  	
+	AL=' ';	
+	$ INT 0x10 //Modifica Ah,BX
+	IF (DI>10)
+	{
+	 $ INT 0x10
+	}
+  }
+      
+  AL='.';  //Mas pequenio que poner ELSE
+  IF (CX>5) { AL='-';}  
+  $ INT 0x10       
+ } 
+ GOTO inicio;
+}
+
