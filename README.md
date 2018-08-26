@@ -7,4 +7,4 @@ It is programmed in C--, which is a mixture of C language and assembler.
 
 The program only occupies 81 bytes.
 
-It works on real 8086 machine (real or Windows cmd) or DOSBOX emulator.
+It works on real 8086 machine (real DOS or Windows cmd) or DOSBOX emulator.
